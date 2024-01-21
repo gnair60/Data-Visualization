@@ -1,0 +1,57 @@
+---
+title: "Lab 1"
+author: "Gautam"
+affiliation-title: "University of Utah"
+date: last-modified
+title-block-style: default
+title-block-banner: true
+format: 
+  html:
+      embed-resources: true
+      theme: flatly
+      code-block-bg: true
+      code-block-border-left: "#31BAE9"
+      highlight-style: printing
+---
+
+```{r setup}
+#| include: false
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+## What I want to learn this semester
+
+My goal during the course is to learn the foundations and progress to more complicated visualization approaches. I anticipate acquiring expertise in tasks such as data import and cleaning, conducting comprehensive exploratory data analysis, and gaining proficiency with the ggplot2 package for crafting static visualizations. The basic objective is to navigate from basics to advanced skills, transforming raw data into insightful and visually compelling representations.
+
+## Task 1
+
+```{r task1}
+# Put code here
+data("mtcars")
+filter_cars <- mtcars %>% filter(cyl == 6)
+arrange_cars <- mtcars %>%arrange(desc(mpg))
+my_cars <- mtcars %>% filter(mpg > 19)
+```
+
+## Task 2
+
+```{r task2}
+# Put code here
+install.packages("jsonlite")
+library(jsonlite)
+#Added dataset from the internet
+url <- "https://opendata.utah.gov/resource/5bsb-rb2f.json"
+park_data <- fromJSON(url)
+
+#Created aggregated Operation
+grouped_data <- park_data %>%  group_by(park) %>%
+  summarize(
+    avg_acres = mean(acres)
+  )
+
+# Print the result
+print(grouped_data)
+
+```
