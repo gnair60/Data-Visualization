@@ -1,0 +1,259 @@
+---
+title: "Lab 4 : Advanced ggplot"
+author: "Jeremy Morris"
+affiliation-title: "University of Utah"
+date: last-modified
+title-block-style: default
+title-block-banner: "#890000"
+format: 
+  html:
+      embed-resources: true
+      theme: flatly
+      code-block-bg: true
+      code-block-border-left: "#3ABFC0"
+      highlight-style: printing
+execute:
+    message: false
+    warning: false
+    error: false
+---
+
+
+```{r setup, include=FALSE}
+#| include: false
+library(tidyverse)
+library(here)
+library(nlme)
+library(nycflights13)
+library(ggrepel)
+```
+
+
+# Components of a basic plot
+
+We want to examine the parts of a basic plot in more detail. Take the following as an example.
+```{r basic}
+ggplot(data = mpg, aes(x=displ, y=hwy, colour = factor(cyl))) +
+  geom_point()
+```
+
+What is happening with above call to ggplot? The call to `summary` helps us look at the plot object in more detail. Note that when we set the varible `p` there are no layers.
+
+```{r basic_summary}
+p <- ggplot(data = mpg, aes(x=displ, y=hwy, colour = factor(cyl)))
+summary(p) 
+```
+
+As mentioned, when we try to plot, nothing happens. Remeber that we haven't added any layers. More specifically, a geometric layer hasn't been added.
+```{r basic_plot}
+p 
+```
+
+To add a layer we add a geometric object.
+
+```{r add_geom}
+p_geom <- p + geom_point()
+summary(p_geom) # examine the components of the plot
+```
+
+Now that there is a layer, it can be plotted. Note that we can save a plot to a variable and then plot it by calling just that variable. We can also assign a base visualization to a variable and then add to it later. We'll see that a little as we go on.
+```{r plot}
+p_geom # plot it
+```
+
+Note that it is possible to add other types of geometric layers to the base plot but those chart types may not make any sense. Ggplot is flexible enough to generate any plot you like, even if that plot doesn't make sense.
+
+```{r line_wrong}
+p + geom_line()
+```
+
+Again, we can use `geom_col` to generate a bar plot but it doesn't really make sense.
+
+```{r bar_wrong}
+p + geom_col()
+```
+
+Remember that a complete list of geoms can be found [here](https://ggplot2.tidyverse.org/reference/) in the "Layer: geoms" section and, to a degree, in the "Layer: stats" section.
+
+The same thing can be seen when we start to add regression layers (this is the example we saw in the first lab). Note again that this doesn't make any sense because the aesthetic mappings are set at the base level and are not fed into the individual layers.
+```{r add_regression2}
+p + geom_point() + geom_smooth()
+```
+
+We can fix this by setting the aesthetic mappings separately for each layer.
+```{r add_to_geom,message=FALSE}
+ggplot(data = mpg) +
+  geom_point(aes(x=displ, y=hwy, colour = factor(cyl))) +
+  geom_smooth(aes(x=displ,y=hwy))
+```
+
+## Facet
+
+Facets allow you to break one chart into multiples. This can be helpful if you have too many dimensions and want to represent something more complex. Each of the facets will have the same format, just split on a specific value from the data.
+
+The following creates a facet by year using the `facet_wrap` function. This function splits on one variable from your data and wraps when the image becomes too wide. You can control the number of rows or columns separately using the `nrow` or `ncol` arguments.
+
+```{r facet1}
+ggplot(data = mpg, aes(x=displ, y=hwy,color=factor(cyl))) + 
+  geom_point() +
+  facet_wrap( ~ year)
+```
+
+This folowing example shows how to show wrap the faceted charts into one column.
+```{r facetw2}
+ggplot(data = mpg, aes(x=displ, y=hwy,color=factor(cyl))) + 
+  geom_point() +
+  facet_wrap( ~ year,ncol=1)
+```
+
+The `facet_grid` function allows you to specify a split for rows and columns. The following plot splits by `cyl` and `year` in the rows and columns respectively. Facets also allow you to control how standardized the plots are. By default, all axes will share the same dimensions. The following shows how to allow the y-axis to have its own limits.
+```{r free_y}
+ggplot(data = mpg, aes(x=displ, y=hwy)) + 
+    geom_point() +
+    facet_grid(cyl ~ year,scales='free_y')
+```
+
+
+
+
+## Coordinates
+
+You have probably already looked up how to rotate a chart. To be official about it, we can use one of the `coord` functions to do this. In the following example, we create a bar chart and rotate it 90 degrees.
+
+```{r coord_flip}
+ggplot(mpg) + 
+  geom_bar(aes(x=manufacturer)) +
+  coord_flip()
+```
+
+## Scales
+
+Scales or axes chart can be independently modified as well using one of the scale functions. These exist in the form `scale_*_<type>`. For example, if you want to modifiy the y-axis where the variable is continuous, you would use `scale_y_continuous` as in the following example. This example shows how we can modify the y-axis to specify the limits and breaks. There are several other options to consider.
+
+```{r scale_x_continuous}
+p + 
+  geom_point() +
+  scale_y_continuous(limits=c(0,60),breaks=c(0:6)*10) 
+```
+
+## Labels
+
+To adjust labels in your chart, use the `labs` function. It is always suggested that you specify axis labels, legend label and a chart title. This can be done as follows.
+
+```{r labs}
+p + geom_point() + 
+  labs(x='Displacement',y='Highway Mileage',color='# of Cylinders',title='Engine displacement varies with highway mileage',subtitle='Negative Correlation')
+```
+
+## Themes
+
+Themes can be used to quickly modify the overall look and feel of your charts. Here we see three examples, starting with the default theme applied.
+
+```{r default_theme}
+p + geom_point() + labs(title='Default Theme')
+p + geom_point() + theme_bw() + labs(title='theme_bw')
+p + geom_point() + theme_minimal() + labs(title='theme_minimal')
+p + geom_point() + theme_dark() + labs(title='theme_dark')
+p + geom_point() + theme_void() + labs(title='theme_void',subtitle='Great for defining your own axes')
+p + geom_point() + theme_classic() + labs(title='theme_classic',subtitle='Removes the box around the plot')
+
+```
+
+# Some examples
+
+### Airport Delays Over Time
+
+Data Prep  
+
+1. Add a binary flag (1/0) for delay
+2. Compute summaries by origin and month -- n = total flights, delay = total delayed flights
+
+```{r data_prep}
+delay_by_month <- flights |> mutate(delay=if_else(dep_delay > 0,1,0)) |> 
+  group_by(origin,month) |> summarise(n=n(),delay=sum(delay,na.rm=T))
+```
+
+The standard plot may look something like this.
+
+```{r standard1}
+ggplot(delay_by_month) +
+  geom_col(aes(x=month,y=delay,fill=origin),position='dodge') +
+  scale_x_continuous(breaks=c(1:12)) +
+  labs(x='Month',y='# of Flights with a Delay',fill='Origin',
+       title='LGA Often Has the Fewest Delays') +
+  theme_classic(base_size=15)
+```
+
+If we want to only highlight only the important stuff...
+```{r highlight_important}
+ggplot(delay_by_month) +
+  geom_bar(aes(x=month,y=delay,fill=origin),position='dodge',stat='identity',color='#8ca2a6') +
+  scale_x_continuous(breaks=c(1:12)) +
+  scale_fill_manual(values=alpha(c('#bcc3c4','#bcc3c4','#fbbf5e'),0.7)) +
+  labs(x='Month',y='# of Flights with a Delay',fill='Origin',
+       title='LGA Often Has the Fewest Delays') +
+  theme_classic(base_size=15)
+```
+
+Push necessary, but non-message-impacting to the background...
+```{r push_back}
+month_list <- c('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
+ggplot(delay_by_month) + 
+  geom_line(aes(x=month,y=delay,color=origin),size=1) +
+  scale_color_manual(values=alpha(c('#bcc3c4','#bcc3c4','#fbbf5e'),0.7)) +
+  scale_x_continuous(breaks=c(1:12),labels=month_list) +
+  labs(x='Month',y='# of Flights with a Delay',color='Origin',
+       title='LGA Often Has the Fewest Delays') +
+  theme_classic(base_size=15) +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank())
+```
+
+### Delay Comparison
+
+Data Prep  
+
+1. Add variable for delay (1 = delay, 0 = not)
+2. Compute summaries of total flights and delays
+3. Add pct delayed and mean(n), mean(p)
+1. Create categories for quadrant labels and colors (make the data do all the work)
+
+```{r final_data_prep}
+delay_by_carrier <- flights |> mutate(delay=if_else(dep_delay > 0,1,0)) |> 
+    group_by(carrier) |> summarise(n=n(),delay=sum(delay,na.rm=T)) |> ungroup() |>
+    mutate(p=delay/n,mean_n=mean(n),mean_p=mean(p)) |>
+    mutate(quadrants=case_when(
+        n < mean_n ~ 'left pane',
+        n >= mean_n & p >= mean_p ~ 'upper right',
+        n >= mean_n & p < mean_p ~ 'lower right',
+        TRUE ~ 'OTHER'
+    ))
+
+quadrant_labels <- tibble(label=c('High Flights, Low Delay Pct','High Flights, High Delay Pct'),
+                          x=c(45000,45000),y=c(0.21,0.54),color=c('#292929','#fa6d29'))
+```
+
+
+Final scatterplot creating a visual hierarchy.
+
+```{r final,fig.width=10,fig.height=8}
+ggplot(delay_by_carrier,aes(x=n,y=p,color=quadrants)) +
+    geom_point(size=3,show.legend=FALSE) +
+    geom_text_repel(aes(label=carrier),size=5,show.legend=FALSE) +
+
+    geom_hline(yintercept=mean(delay_by_carrier$p)) +
+    geom_vline(xintercept=mean(delay_by_carrier$n)) +
+  
+    scale_x_continuous(labels=scales::comma) +
+    scale_y_continuous(labels=scales::percent) +
+    labs(x='Total Flights',y='Percent Delayed',title='Percentage Delay vs Total Flights') +
+
+    geom_text(data=quadrant_labels,aes(x=x,y=y,label=label,color=label),size=6) +
+    scale_color_manual(values=c('#292929','#fa6d29','#bcc3c4','#fa6d29','#292929')) +
+
+    theme_bw(base_size=15) +
+    theme(legend.position='none',
+          panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank())
+```
